@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/items/create', [ItemController::class, 'create'])->name('items.create');
     Route::get('/items/{id}/edit', [ItemController::class, 'edit'])->name('items.edit');
     Route::get('/items/{id}/edit-stock', [ItemController::class, 'editStock'])->name('items.edit-stock');
+    Route::get('/items/{id}/StockCard', [ItemController::class, 'viewStockCard'])->name('items.StockCard');
     Route::patch('/items/{id}/update-stock', [ItemController::class, 'updateStock'])->name('items.update-stock');
     Route::patch('/items/{id}', [ItemController::class, 'update'])->name('items.update');
 });

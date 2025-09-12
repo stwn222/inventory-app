@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\StockCard;
 use Illuminate\Database\Eloquent\Model;
 
 class item extends Model
@@ -12,4 +13,9 @@ class item extends Model
         'unit',
         'price'
     ];
+
+    public function stockCards()
+    {
+        return $this->hasMany(StockCard::class, 'items_id');
+    }
 }

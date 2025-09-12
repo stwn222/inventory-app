@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\item;
+use App\Models\StockCard;
 use Illuminate\Http\Request;
 
 class ItemController extends Controller
@@ -49,7 +50,7 @@ class ItemController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'unit' => 'required|string|max:30',
-            'price' => 'required|numeric|max:9999999999999'
+            'price' => 'required|numeric|max:9999999999999',
         ]);
 
         $item = Item::findOrFail($id);
@@ -66,24 +67,48 @@ class ItemController extends Controller
             'item' => $item,
         ]);
     }
-    public function updateStock(Request $request, $id)
-    {
-        $request->validate([
-            'qty' => 'required|numeric|digits_between:1,4',
-            'note' => 'required|in:in,out',
-        ]);
-        $item = Item::findOrFail($id);
-        
-        if ($request->note === 'in'){
-            $item->increment('qty', $request->qty);
+public function updateStock(Request $request, $id)
+{
+    $request->validate([
+        'qty' => 'required|numeric|digits_between:1,4',
+        'note' => 'required|in:in,out',
+        'vendor' => 'nullable|string|max:255',
+        'description' => 'nullable|string|max:255',
+    ]);
+    
+    $item = Item::findOrFail($id);
+    
+    if ($request->note === 'in'){
+        $item->increment('qty', $request->qty);
+    }
+    else if($request->note === 'out'){
+        if($item->qty < $request->qty){
+            return redirect()->route('items.index')->with('error', 'Stok yang dimasukan melebihi jumlah yang tersedia');
         }
-        else if($request->note === 'out'){
-            if($item->qty < $request->qty){
-                return redirect()->route('items.index')->with('error', 'Stok yang dimasukan melebihi jumlah yang tersedia');
-            }
-            $item->decrement('qty', $request->qty);
-        }
+        $item->decrement('qty', $request->qty);
+    }
 
-        return redirect()->route('items.index')->with('success', 'Stok Item Berhasil dirubah');
+    // Perbaiki field vendor dan description
+    StockCard::create([
+        'items_id' => $item->id,
+        'qty' => $request->qty,
+        'note' => $request->note,
+        'description' => $request->description,
+        'vendor' => $request->vendor,
+    ]);
+
+    return redirect()->route('items.index')->with('success', 'Stok Item Berhasil dirubah');
+}
+
+    public function viewStockCard($id)
+    {
+        // Load stockCards dengan urutan terbaru pertama
+        $item = Item::findOrFail($id)->loadMissing(['stockCards' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }]);
+
+        return inertia('Items/StockCard', [
+            'item' => $item,
+        ]);
     }
 }
