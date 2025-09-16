@@ -8,7 +8,8 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
-use Barryvdh\DomPDF\Facade as PDF;
+// Langsung panggil class inti dari library mPDF
+use Mpdf\Mpdf; 
 
 class LaporanController extends Controller
 {
@@ -46,21 +47,21 @@ class LaporanController extends Controller
                     ->whereBetween('tanggal', [$dari, $sampai])
                     ->with('user')
                     ->get();
-                $viewName = 'laporan.laporan_transaksi'; // Template untuk Pemasukan & Pengeluaran
+                $viewName = 'laporan.laporan_transaksi';
                 break;
             
             case 'utang':
                 $data = Debt::whereBetween('tanggal_utang', [$dari, $sampai])
                     ->with('user')
                     ->get();
-                $viewName = 'laporan.laporan_utang'; // Template khusus Utang
+                $viewName = 'laporan.laporan_utang';
                 break;
 
             case 'piutang':
                 $data = Receivable::whereBetween('tanggal_piutang', [$dari, $sampai])
                     ->with('user')
                     ->get();
-                $viewName = 'laporan.laporan_piutang'; // Template khusus Piutang
+                $viewName = 'laporan.laporan_piutang';
                 break;
         }
 
@@ -70,14 +71,25 @@ class LaporanController extends Controller
             'tipe' => $tipe,
             'dari' => $dari,
             'sampai' => $sampai,
-            'total' => $data->sum('jumlah') // Menghitung total jumlah
+            'total' => $data->sum('jumlah')
         ];
 
-        // 3. Membuat PDF dari data (INI BAGIAN YANG DIPERBAIKI)
-        $pdf = app('dompdf')->loadView($viewName, $dataForView);
+        // --- INI ADALAH BAGIAN UTAMA YANG BERUBAH ---
+
+        // 3. Render template Blade menjadi string HTML biasa
+        $html = view($viewName, $dataForView)->render();
+
+        // 4. Buat objek mPDF baru secara manual
+        $mpdf = new Mpdf();
+
+        // 5. Tulis string HTML ke dalam objek mPDF
+        $mpdf->WriteHTML($html);
         
-        // 4. Memberikan nama file dan mengizinkan unduhan
+        // 6. Siapkan nama file
         $fileName = 'laporan-' . $tipe . '-' . $dari . '_sd_' . $sampai . '.pdf';
-        return $pdf->download($fileName);
+
+        // 7. Kirim PDF ke browser untuk diunduh
+        // Argumen kedua 'D' berarti "Download"
+        return $mpdf->Output($fileName, 'D');
     }
 }
