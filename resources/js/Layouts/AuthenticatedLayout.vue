@@ -45,6 +45,17 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Barang
                                 </NavLink>
+                                
+                                
+                                <NavLink :href="route('pemasukan.index')" :active="route().current('pemasukan.index')">
+                                    Pemasukan
+                                </NavLink>
+                                <NavLink :href="route('pengeluaran.index')" :active="route().current('pengeluaran.index')">
+                                    Pengeluaran
+                                </NavLink>
+                                <NavLink :href="route('laporan.index')" :active="route().current('laporan.index')">
+                                    Cetak Laporan
+                                </NavLink>
                             </div>
                         </div>
 

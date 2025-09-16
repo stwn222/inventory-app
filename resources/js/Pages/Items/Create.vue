@@ -14,10 +14,29 @@ const form = useForm({
 const submitForm = () => {
     form.post('/items');
 }
+
+// fungsi untuk format rupiah
+const formatRupiah = (value) => {
+    if (!value) return '';
+    return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0
+    }).format(value);
+};
+
+const handlePriceInput = (e) => {
+    // ambil angka saja (hapus selain digit)
+    let raw = e.target.value.replace(/[^0-9]/g, '');
+    form.price = raw ? parseInt(raw) : 0;
+
+    // update tampilan input dengan format Rp.
+    e.target.value = formatRupiah(form.price);
+};
 </script>
 
 <template>
-    <Head title="Create Item" />
+    <Head title="Tambah Barang" />
     <AuthenticatedLayout>  
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
@@ -50,14 +69,36 @@ const submitForm = () => {
                                 {{ form.errors.unit }}
                             </div>
                         </div>
-                        <div class="mb-4">
-                            <label for="price" class="block text-gray-700 text-xl font-bold mb-2"> Harga :</label>
-                            <input type="text" id="price" v-model="form.price" required class="shadow appearance-none border rounded w-full">
-                            <div class="bg-red-100 border border-red-400 text-black-700 px-4 py-3 rounded m-2 relative mt-2 p-2" v-if="form.errors.price">
-                                {{ form.errors.price }}
+                            <div class="mb-4">
+                                <label for="price" class="block text-gray-700 text-xl font-bold mb-2"> Harga :</label>
+                                <input 
+                                    type="text" 
+                                    id="price" 
+                                    :value="formatRupiah(form.price)" 
+                                    @input="handlePriceInput"
+                                    required 
+                                    class="shadow appearance-none border rounded w-full">
+                                <div class="bg-red-100 border border-red-400 px-4 py-3 rounded mt-2" v-if="form.errors.price">
+                                    {{ form.errors.price }}
+                                </div>
                             </div>
-                        </div>
-                        <PrimaryButton type="submit">Create Item</PrimaryButton>
+                        <div class="flex items-center justify-between">
+                                <PrimaryButton 
+                                    type="submit" 
+                                    :disabled="form.processing"
+                                    class="hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                                >
+                                    <span v-if="form.processing">Processing...</span>
+                                    <span v-else>Tambah Barang</span>
+                                </PrimaryButton>
+                                
+                                <a 
+                                    :href="route('items.index')" 
+                                    class="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+                                >
+                                    Kembali ke Daftar Item
+                                </a>
+                            </div>
                     </form>
                     </div>
                 </div>

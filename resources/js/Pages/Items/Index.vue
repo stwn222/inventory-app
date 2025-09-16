@@ -11,6 +11,7 @@ const props = defineProps({
 // state pencarian
 const search = ref("");
 
+
 // helper format harga
 const formatPrice = (value) => {
     if (!value) return '';
@@ -38,7 +39,7 @@ const filteredItems = computed(() => {
 </script>
 
 <template>
-    <Head title="Item List" />
+    <Head title="Daftar Barang" />
     <AuthenticatedLayout>  
         <template #header>
             <h2 class="text-xl font-semibold leading-tight text-gray-800">
@@ -72,23 +73,23 @@ const filteredItems = computed(() => {
                             {{ $page.props.flash.error }}
                         </div>
 
-                        <table class="table-auto w-full mt-4">
+                        <table class="table-auto w-full mt-4 text-center">
                           <thead>
                             <tr>
-                              <th class="px-4 py-2">No</th>
-                              <th class="px-4 py-2">Nama</th>
-                              <th class="px-4 py-2">Jumlah</th>
-                              <th class="px-4 py-2">Harga</th>
-                              <th class="px-4 py-2">Aksi</th>
+                              <th class="text-xl px-4 py-2">No</th>
+                              <th class="text-xl px-4 py-2">Nama</th>
+                              <th class="text-xl px-4 py-2">Jumlah</th>
+                              <th class="text-xl px-4 py-2">Harga</th>
+                              <th class="text-xl px-4 py-2">Aksi</th>
                             </tr>
                           </thead>
                           <tbody>
                             <tr v-for="(item, index) in filteredItems" :key="item.id">
-                              <td class="border px=4 py-2">{{ index + 1 }}</td>
-                              <td class="border px=4 py-2">{{ item.name }}</td>
-                              <td class="border px=4 py-2">{{ item.qty + ' ' + item.unit }}</td>
-                              <td class="border px=4 py-2">{{ formatPrice(item.price) }}</td>
-                              <td class="border px=4 py-2">
+                              <td class="text-xl border px=4 py-2">{{ index + 1 }}</td>
+                              <td class="text-xl border px=4 py-2">{{ item.name }}</td>
+                              <td class="text-xl border px=4 py-2">{{ item.qty + ' ' + item.unit }}</td>
+                              <td class="text-xl border px=4 py-2">{{ formatPrice(item.price) }}</td>
+                              <td class="text-xl border px=4 py-2">
                                   <PrimaryButton class="mr-2 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
                                     <a :href="`/items/${item.id}/edit`">Edit Barang</a>
                                   </PrimaryButton>
