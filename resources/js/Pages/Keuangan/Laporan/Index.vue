@@ -12,11 +12,13 @@ const form = useForm({
     sampai_tanggal: new Date().toISOString().slice(0, 10),
 });
 
-// Menggunakan form.post akan membuat browser mengunduh file PDF
 const submit = () => {
-    form.post(route('laporan.cetak'), {
-        // Tidak perlu 'onFinish' karena browser akan menangani unduhan
+    const url = route('laporan.cetak', { 
+        tipe: form.tipe,
+        dari_tanggal: form.dari_tanggal,
+        sampai_tanggal: form.sampai_tanggal
     });
+    window.open(url, '_blank');
 };
 </script>
 
@@ -74,7 +76,7 @@ const submit = () => {
 
                             <div class="flex items-center justify-end mt-6">
                                 <PrimaryButton :class="{ 'opacity-25': form.processing }" :disabled="form.processing">
-                                    Cetak Laporan (PDF)
+                                    Buka Halaman Cetak
                                 </PrimaryButton>
                             </div>
                         </form>

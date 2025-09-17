@@ -35,7 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('pemasukan', PemasukanController::class);
     Route::resource('pengeluaran', PengeluaranController::class);
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
-    Route::post('/laporan/cetak', [LaporanController::class, 'cetak'])->name('laporan.cetak');
+    Route::get('/laporan/cetak', [LaporanController::class, 'cetak'])->name('laporan.cetak');
 });
 
 require __DIR__.'/auth.php';
