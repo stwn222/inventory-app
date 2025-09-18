@@ -111,4 +111,24 @@ public function updateStock(Request $request, $id)
             'item' => $item,
         ]);
     }
+
+    public function printPreview()
+{
+    // Method ini hanya menampilkan halaman Vue untuk print.
+    // Datanya sudah dikirim melalui client-side (sessionStorage).
+    return inertia('Items/Print');
+}
+
+public function destroy($id)
+{
+    $item = item::findOrFail($id);
+
+    // Hapus semua riwayat stok (data anak) yang terhubung dengan item ini
+    $item->stockCards()->delete();
+
+    // Setelah data anak dihapus, baru hapus data induknya
+    $item->delete();
+
+    return redirect()->route('items.index')->with('success', 'Barang dan semua riwayatnya berhasil dihapus.');
+}
 }

@@ -14,8 +14,10 @@ class item extends Model
         'price'
     ];
 
-    public function stockCards()
-    {
+        public function stockCards()
+        {
         return $this->hasMany(StockCard::class, 'items_id');
-    }
+        }
+
 }
+

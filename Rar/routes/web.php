@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Redirect;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PemasukanController;
-use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengeluaranController;
 
 
@@ -33,8 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/items/{id}/StockCard', [ItemController::class, 'viewStockCard'])->name('items.StockCard');
     Route::patch('/items/{id}/update-stock', [ItemController::class, 'updateStock'])->name('items.update-stock');
     Route::patch('/items/{id}', [ItemController::class, 'update'])->name('items.update');
-    Route::resource('transaksi', TransaksiController::class);
-    Route::get('/transaksi/print', [TransaksiController::class, 'printPreview'])->name('transaksi.print');
+    Route::resource('pemasukan', PemasukanController::class);
+    Route::resource('pengeluaran', PengeluaranController::class);
     Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
     Route::get('/laporan/cetak', [LaporanController::class, 'cetak'])->name('laporan.cetak');
 
