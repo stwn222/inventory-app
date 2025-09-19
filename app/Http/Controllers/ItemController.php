@@ -100,17 +100,40 @@ public function updateStock(Request $request, $id)
     return redirect()->route('items.index')->with('success', 'Stok Item Berhasil dirubah');
 }
 
-    public function viewStockCard($id)
-    {
-        // Load stockCards dengan urutan terbaru pertama
-        $item = Item::findOrFail($id)->loadMissing(['stockCards' => function ($query) {
-            $query->orderBy('created_at', 'desc');
-        }]);
+public function viewStockCard(Request $request, $id) // Tambahkan Request $request
+{
+    $item = Item::findOrFail($id);
 
-        return inertia('Items/StockCard', [
-            'item' => $item,
-        ]);
+    // Mulai query untuk stock cards
+    $stockCardsQuery = $item->stockCards()
+        ->orderBy('created_at', 'desc');
+
+    // Terapkan filter jika ada
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $stockCardsQuery->where(function ($query) use ($search) {
+            $query->where('description', 'like', "%{$search}%")
+                  ->orWhere('vendor', 'like', "%{$search}%");
+        });
     }
+
+    if ($request->filled('note') && $request->note != 'semua') {
+        $stockCardsQuery->where('note', $request->note);
+    }
+
+    if ($request->filled('dari_tanggal') && $request->filled('sampai_tanggal')) {
+        $stockCardsQuery->whereBetween('created_at', [$request->dari_tanggal . ' 00:00:00', $request->sampai_tanggal . ' 23:59:59']);
+    }
+    
+    // Eksekusi query dan muat hasilnya ke dalam item
+    $item->setRelation('stockCards', $stockCardsQuery->get());
+
+    return inertia('Items/StockCard', [
+        'item' => $item,
+        // Kirim filter yang sedang aktif ke view
+        'filters' => $request->all(['search', 'note', 'dari_tanggal', 'sampai_tanggal']),
+    ]);
+}
 
     public function printPreview()
 {

@@ -11,24 +11,30 @@ use Illuminate\Http\RedirectResponse;
 
 class TransaksiController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request)
     {
-        $transactions = Transaction::with('user')
-            ->when($request->input('tipe'), function ($query, $tipe) {
-                if ($tipe !== 'semua') { // Tambahkan kondisi agar 'semua' tidak memfilter apa pun
-                    return $query->where('tipe', $tipe);
-                }
+        $transactionsQuery = Transaction::query()
+            ->when($request->input('tipe') && $request->input('tipe') !== 'semua', function ($query) use ($request) {
+                return $query->where('tipe', $request->input('tipe'));
             })
-            ->latest()
-            ->paginate(15)
-            ->withQueryString();
+            ->when($request->input('dari_tanggal') && $request->input('sampai_tanggal'), function ($query) use ($request) {
+                return $query->whereBetween('tanggal', [$request->input('dari_tanggal'), $request->input('sampai_tanggal')]);
+            })
+            ->with('user')
+            ->latest();
+
+        if ($request->has('print')) {
+            return response()->json(['transactions' => $transactionsQuery->get()]);
+        }
+        
+        $transactions = $transactionsQuery->paginate(10)->withQueryString();
 
         return Inertia::render('Transaksi/Index', [
             'transactions' => $transactions,
-            'filters' => $request->only(['tipe']), 
+            'filters' => $request->only(['tipe', 'dari_tanggal', 'sampai_tanggal']), 
         ]);
     }
-
+    
     public function create(): Response
     {
         return Inertia::render('Transaksi/Create');
@@ -51,13 +57,13 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('message', 'Transaksi berhasil ditambahkan.');
     }
 
-    public function show(Transaction $transaksi)
+    // --- PERBAIKAN DI SINI ---
+    // Gunakan nama variabel $transaction agar cocok dengan nama parameter route
+    public function show(Transaction $transaction)
     {
-        // Di Laravel 11, parameter harus sama. Kita ganti $transaksi menjadi $transaction
-        return redirect()->route('transaksi.edit', $transaksi);
+        return redirect()->route('transaksi.edit', $transaction);
     }
     
-    // UBAH NAMA PARAMETER MENJADI $transaction
     public function edit(Transaction $transaction): Response
     {
         return Inertia::render('Transaksi/Edit', [
@@ -65,7 +71,6 @@ class TransaksiController extends Controller
         ]);
     }
 
-    // UBAH NAMA PARAMETER MENJADI $transaction
     public function update(Request $request, Transaction $transaction): RedirectResponse
     {
         $validated = $request->validate([
@@ -81,7 +86,6 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('message', 'Transaksi berhasil diperbarui.');
     }
 
-    // UBAH NAMA PARAMETER MENJADI $transaction
     public function destroy(Transaction $transaction): RedirectResponse
     {
         $transaction->delete();

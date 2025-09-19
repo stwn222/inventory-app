@@ -33,14 +33,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/items/{id}/StockCard', [ItemController::class, 'viewStockCard'])->name('items.StockCard');
     Route::patch('/items/{id}/update-stock', [ItemController::class, 'updateStock'])->name('items.update-stock');
     Route::patch('/items/{id}', [ItemController::class, 'update'])->name('items.update');
-    Route::resource('transaksi', TransaksiController::class);
-    Route::get('/transaksi/print', [TransaksiController::class, 'printPreview'])->name('transaksi.print');
-    Route::get('/laporan', [LaporanController::class, 'index'])->name('laporan.index');
-    Route::get('/laporan/cetak', [LaporanController::class, 'cetak'])->name('laporan.cetak');
-
-
     Route::get('/items/print', [ItemController::class, 'printPreview'])->name('items.print');
     Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
+    
+Route::resource('transaksi', TransaksiController::class)->parameters([
+    'transaksi' => 'transaction'
+]);
+    Route::get('/transaksi/print', [TransaksiController::class, 'printPreview'])->name('transaksi.print');
+
 });
 
 require __DIR__.'/auth.php';
