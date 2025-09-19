@@ -13,21 +13,24 @@ class TransaksiController extends Controller
 {
     public function index(Request $request)
     {
-        $transactionsQuery = Transaction::query()
-            ->when($request->input('tipe') && $request->input('tipe') !== 'semua', function ($query) use ($request) {
-                return $query->where('tipe', $request->input('tipe'));
-            })
-            ->when($request->input('dari_tanggal') && $request->input('sampai_tanggal'), function ($query) use ($request) {
-                return $query->whereBetween('tanggal', [$request->input('dari_tanggal'), $request->input('sampai_tanggal')]);
-            })
+        // Memulai query dasar
+        $query = Transaction::query()
             ->with('user')
+            ->when($request->input('tipe') && $request->input('tipe') !== 'semua', function ($q) use ($request) {
+                $q->where('tipe', $request->input('tipe'));
+            })
+            ->when($request->input('dari_tanggal') && $request->input('sampai_tanggal'), function ($q) use ($request) {
+                $q->whereBetween('tanggal', [$request->input('dari_tanggal'), $request->input('sampai_tanggal')]);
+            })
             ->latest();
 
-        if ($request->has('print')) {
-            return response()->json(['transactions' => $transactionsQuery->get()]);
+        // JIKA INI REQUEST UNTUK CETAK, KEMBALIKAN SEMUA DATA TANPA PAGINASI
+        if ($request->has('print') && $request->expectsJson()) {
+            return response()->json(['transactions' => $query->get()]);
         }
         
-        $transactions = $transactionsQuery->paginate(10)->withQueryString();
+        // JIKA BUKAN UNTUK CETAK, TAMPILKAN HALAMAN DENGAN PAGINASI
+        $transactions = $query->paginate(15)->appends($request->all());
 
         return Inertia::render('Transaksi/Index', [
             'transactions' => $transactions,
@@ -57,8 +60,6 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('message', 'Transaksi berhasil ditambahkan.');
     }
 
-    // --- PERBAIKAN DI SINI ---
-    // Gunakan nama variabel $transaction agar cocok dengan nama parameter route
     public function show(Transaction $transaction)
     {
         return redirect()->route('transaksi.edit', $transaction);
@@ -92,8 +93,8 @@ class TransaksiController extends Controller
         return redirect()->route('transaksi.index')->with('message', 'Transaksi berhasil dihapus.');
     }
 
-    public function printPreview()
+    public function printPreview(): Response
     {
-        return inertia('Transaksi/Print');
+        return Inertia::render('Transaksi/Print');
     }
 }

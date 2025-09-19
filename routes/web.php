@@ -36,10 +36,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/items/print', [ItemController::class, 'printPreview'])->name('items.print');
     Route::delete('/items/{id}', [ItemController::class, 'destroy'])->name('items.destroy');
     
+    Route::get('/transaksi/print', [TransaksiController::class, 'printPreview'])->name('transaksi.print');
 Route::resource('transaksi', TransaksiController::class)->parameters([
     'transaksi' => 'transaction'
 ]);
-    Route::get('/transaksi/print', [TransaksiController::class, 'printPreview'])->name('transaksi.print');
 
 });
 

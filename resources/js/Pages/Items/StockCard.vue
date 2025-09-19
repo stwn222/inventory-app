@@ -2,13 +2,15 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TextInput from '@/Components/TextInput.vue';
 import InputLabel from '@/Components/InputLabel.vue';
+import Pagination from '@/Components/Pagination.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch } from 'vue';
 import debounce from 'lodash/debounce';
 
 const props = defineProps({
-    item: Object, // berisi item beserta stockCards
-    filters: Object, // berisi filter yang aktif
+    item: Object, // informasi item
+    stockCards: Object, // paginated stock cards
+    filters: Object, // filter yang aktif
 });
 
 // State untuk setiap filter, diisi dengan nilai dari controller jika ada
@@ -94,38 +96,49 @@ function formatDate(dateString) {
                             </div>
                         </div>
 
-                        <table class="table-auto w-full mt-4 text-center border">
-                          <thead class="bg-gray-100">
-                            <tr>
-                              <th class="px-4 py-2 border">#</th>
-                              <th class="px-4 py-2 border">Tanggal</th>
-                              <th class="px-4 py-2 border">Jumlah</th>
-                              <th class="px-4 py-2 border">Catatan</th>
-                              <th class="px-4 py-2 border">Keterangan</th>
-                              <th class="px-4 py-2 border">Vendor</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            <tr v-for="(card, index) in item.stock_cards" :key="card.id">
-                              <td class="border px-4 py-2">{{ index + 1 }}</td>
-                              <td class="border px-4 py-2">{{ formatDate(card.created_at) }}</td>
-                              <td class="border px-4 py-2">{{ formatNumber(card.qty) }}</td>
-                              <td class="border px-4 py-2">
-                                <span 
-                                  :class="card.note === 'in' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'"
-                                >
-                                  {{ card.note === 'in' ? 'Masuk' : 'Keluar' }}
-                                </span>
-                              </td>
-                              <td class="border px-4 py-2 text-left">{{ card.description ?? '-' }}</td>
-                              <td class="border px-4 py-2 text-left">{{ card.vendor ?? '-' }}</td>
-                            </tr>
-                            
-                            <tr v-if="item.stock_cards.length === 0">
-                              <td colspan="6" class="text-gray-500 py-4">Tidak ada riwayat ditemukan dengan filter ini.</td>
-                            </tr>
-                          </tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="table-auto w-full mt-4 text-center border">
+                              <thead class="bg-gray-100">
+                                <tr>
+                                  <th class="px-4 py-2 border">#</th>
+                                  <th class="px-4 py-2 border">Tanggal</th>
+                                  <th class="px-4 py-2 border">Jumlah</th>
+                                  <th class="px-4 py-2 border">Catatan</th>
+                                  <th class="px-4 py-2 border">Keterangan</th>
+                                  <th class="px-4 py-2 border">Vendor</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr v-for="(card, index) in stockCards.data" :key="card.id">
+                                  <td class="border px-4 py-2">
+                                    {{ (stockCards.current_page - 1) * stockCards.per_page + index + 1 }}
+                                  </td>
+                                  <td class="border px-4 py-2">{{ formatDate(card.created_at) }}</td>
+                                  <td class="border px-4 py-2">{{ formatNumber(card.qty) }}</td>
+                                  <td class="border px-4 py-2">
+                                    <span 
+                                      :class="card.note === 'in' ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'"
+                                    >
+                                      {{ card.note === 'in' ? 'Masuk' : 'Keluar' }}
+                                    </span>
+                                  </td>
+                                  <td class="border px-4 py-2 text-left">{{ card.description ?? '-' }}</td>
+                                  <td class="border px-4 py-2 text-left">{{ card.vendor ?? '-' }}</td>
+                                </tr>
+                                
+                                <tr v-if="stockCards.data.length === 0">
+                                  <td colspan="6" class="text-gray-500 py-4">Tidak ada riwayat ditemukan dengan filter ini.</td>
+                                </tr>
+                              </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Pagination Component -->
+                        <Pagination 
+                            v-if="stockCards.total > stockCards.per_page" 
+                            :pagination="stockCards" 
+                            class="mt-6"
+                        />
                     </div>
                 </div>
             </div>

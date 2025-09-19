@@ -1,17 +1,28 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { router } from '@inertiajs/vue3';
-
-import { ref, computed } from 'vue';
+import Pagination from '@/Components/Pagination.vue';
+import { ref, watch } from 'vue';
+import debounce from 'lodash/debounce';
 
 const props = defineProps({
-    items: Array
+    items: Object, // Sekarang berupa paginated object
+    filters: Object
 });
 
-// State pencarian
-const search = ref("");
+// State pencarian dari filters yang ada
+const search = ref(props.filters.search || '');
+
+// Watcher untuk search dengan debounce
+watch(search, debounce(() => {
+    router.get(route('items.index'), {
+        search: search.value,
+    }, {
+        preserveState: true,
+        replace: true,
+    });
+}, 300));
 
 // Helper format harga
 const formatPrice = (value) => {
@@ -23,37 +34,19 @@ const formatPrice = (value) => {
     }).format(value).replace('IDR', 'Rp').trim();
 };
 
-// Filter items berdasarkan keyword
-const filteredItems = computed(() => {
-    if (!search.value) return props.items;
-
-    const keyword = search.value.toLowerCase();
-    return props.items.filter(item => {
-        return (
-            (item.name && item.name.toLowerCase().includes(keyword)) ||
-            (item.unit && item.unit.toLowerCase().includes(keyword)) ||
-            (item.qty && item.qty.toString().toLowerCase().includes(keyword)) ||
-            (item.price && item.price.toString().toLowerCase().includes(keyword))
-        );
-    });
-});
-
-// FUNGSI BARU UNTUK CETAK
+// FUNGSI UNTUK CETAK - menggunakan data dari pagination
 const printReport = () => {
-    // Simpan data yang sudah difilter ke sessionStorage
-    sessionStorage.setItem('printedItems', JSON.stringify(filteredItems.value));
+    // Ambil semua data tanpa filter untuk dicetak
+    sessionStorage.setItem('printedItems', JSON.stringify(props.items.data));
     
-    // Buka halaman cetak di tab baru
     const url = route('items.print');
     window.open(url, '_blank');
 };
 
 const deleteItem = (id) => {
-    // Tampilkan dialog konfirmasi
     if (confirm('Apakah Anda yakin ingin menghapus barang ini?')) {
-        // Kirim request DELETE ke server
         router.delete(route('items.destroy', id), {
-            preserveScroll: true // Agar halaman tidak scroll ke atas
+            preserveScroll: true
         });
     }
 };
@@ -100,45 +93,57 @@ const goToCreatePage = () => {
                             {{ $page.props.flash.error }}
                         </div>
 
-                        <table class="table-auto w-full mt-4 text-center">
-                            <thead>
-                                <tr>
-                                    <th class="px-4 py-2">No</th>
-                                    <th class="px-4 py-2">Nama</th>
-                                    <th class="px-4 py-2">Jumlah</th>
-                                    <th class="px-4 py-2">Harga</th>
-                                    <th class="px-4 py-2">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(item, index) in filteredItems" :key="item.id">
-                                    <td class="border px-4 py-2">{{ index + 1 }}</td>
-                                    <td class="border px-4 py-2 text-left">{{ item.name }}</td>
-                                    <td class="border px-4 py-2">{{ item.qty + ' ' + item.unit }}</td>
-                                    <td class="border px-4 py-2 text-right">{{ formatPrice(item.price) }}</td>
-                                    <td class="border px-4 py-2 flex justify-center gap-2 flex-wrap">
-                                        <Link :href="route('items.edit', { id: item.id })">
-                                            <PrimaryButton>Edit Barang</PrimaryButton>
-                                        </Link>
-                                        <Link :href="route('items.edit-stock', { id: item.id })">
-                                            <PrimaryButton>Edit Stok</PrimaryButton>
-                                        </Link>
-                                        <Link :href="route('items.StockCard', { id: item.id })">
-                                            <PrimaryButton>Riwayat Stok</PrimaryButton>
-                                        </Link>
-                                    <PrimaryButton 
-                                        @click="deleteItem(item.id)" 
-                                        class="bg-red-600 hover:bg-red-800 focus:bg-red-800 active:bg-red-900">
-                                        Hapus
-                                    </PrimaryButton>
+                        <div class="overflow-x-auto">
+                            <table class="table-auto w-full mt-4 text-center">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-2">No</th>
+                                        <th class="px-4 py-2">Nama</th>
+                                        <th class="px-4 py-2">Jumlah</th>
+                                        <th class="px-4 py-2">Harga</th>
+                                        <th class="px-4 py-2">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="(item, index) in items.data" :key="item.id">
+                                        <td class="border px-4 py-2">
+                                            {{ (items.current_page - 1) * items.per_page + index + 1 }}
+                                        </td>
+                                        <td class="border px-4 py-2 text-left">{{ item.name }}</td>
+                                        <td class="border px-4 py-2">{{ item.qty + ' ' + item.unit }}</td>
+                                        <td class="border px-4 py-2 text-right">{{ formatPrice(item.price) }}</td>
+                                        <td class="border px-4 py-2">
+                                            <div class="flex justify-center gap-2 flex-wrap">
+                                                <Link :href="route('items.edit', { id: item.id })">
+                                                    <PrimaryButton>Edit Barang</PrimaryButton>
+                                                </Link>
+                                                <Link :href="route('items.edit-stock', { id: item.id })">
+                                                    <PrimaryButton>Edit Stok</PrimaryButton>
+                                                </Link>
+                                                <Link :href="route('items.StockCard', { id: item.id })">
+                                                    <PrimaryButton>Riwayat Stok</PrimaryButton>
+                                                </Link>
+                                                <PrimaryButton 
+                                                    @click="deleteItem(item.id)" 
+                                                    class="bg-red-600 hover:bg-red-800 focus:bg-red-800 active:bg-red-900">
+                                                    Hapus
+                                                </PrimaryButton>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr v-if="items.data.length === 0">
+                                        <td colspan="5" class="text-gray-500 py-4">Barang tidak ditemukan</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                                    </td>
-                                </tr>
-                                <tr v-if="filteredItems.length === 0">
-                                    <td colspan="5" class="text-gray-500 py-4">Barang tidak ditemukan</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <!-- Pagination Component -->
+                        <Pagination 
+                            v-if="items.total > items.per_page" 
+                            :pagination="items" 
+                            class="mt-6"
+                        />
                     </div>
                 </div>
             </div>

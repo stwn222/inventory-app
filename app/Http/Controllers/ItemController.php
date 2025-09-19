@@ -8,12 +8,27 @@ use Illuminate\Http\Request;
 
 class ItemController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = item::all();
+        $query = Item::query();
+
+        // Filter berdasarkan pencarian
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('unit', 'like', "%{$search}%")
+                  ->orWhere('qty', 'like', "%{$search}%")
+                  ->orWhere('price', 'like', "%{$search}%");
+            });
+        }
+
+        // Paginate dengan 10 item per halaman
+        $items = $query->paginate(10)->appends($request->all());
 
         return inertia('Items/Index', [
             'items' => $items,
+            'filters' => $request->only(['search']),
         ]);
     }
     
@@ -67,91 +82,86 @@ class ItemController extends Controller
             'item' => $item,
         ]);
     }
-public function updateStock(Request $request, $id)
-{
-    $request->validate([
-        'qty' => 'required|numeric|digits_between:1,4',
-        'note' => 'required|in:in,out',
-        'vendor' => 'nullable|string|max:255',
-        'description' => 'nullable|string|max:255',
-    ]);
-    
-    $item = Item::findOrFail($id);
-    
-    if ($request->note === 'in'){
-        $item->increment('qty', $request->qty);
-    }
-    else if($request->note === 'out'){
-        if($item->qty < $request->qty){
-            return redirect()->route('items.index')->with('error', 'Stok yang dimasukan melebihi jumlah yang tersedia');
+
+    public function updateStock(Request $request, $id)
+    {
+        $request->validate([
+            'qty' => 'required|numeric|digits_between:1,4',
+            'note' => 'required|in:in,out',
+            'vendor' => 'nullable|string|max:255',
+            'description' => 'nullable|string|max:255',
+        ]);
+        
+        $item = Item::findOrFail($id);
+        
+        if ($request->note === 'in'){
+            $item->increment('qty', $request->qty);
         }
-        $item->decrement('qty', $request->qty);
+        else if($request->note === 'out'){
+            if($item->qty < $request->qty){
+                return redirect()->route('items.index')->with('error', 'Stok yang dimasukan melebihi jumlah yang tersedia');
+            }
+            $item->decrement('qty', $request->qty);
+        }
+
+        StockCard::create([
+            'items_id' => $item->id,
+            'qty' => $request->qty,
+            'note' => $request->note,
+            'description' => $request->description,
+            'vendor' => $request->vendor,
+        ]);
+
+        return redirect()->route('items.index')->with('success', 'Stok Item Berhasil dirubah');
     }
 
-    // Perbaiki field vendor dan description
-    StockCard::create([
-        'items_id' => $item->id,
-        'qty' => $request->qty,
-        'note' => $request->note,
-        'description' => $request->description,
-        'vendor' => $request->vendor,
-    ]);
+    public function viewStockCard(Request $request, $id)
+    {
+        $item = Item::findOrFail($id);
 
-    return redirect()->route('items.index')->with('success', 'Stok Item Berhasil dirubah');
-}
+        // Mulai query untuk stock cards
+        $stockCardsQuery = $item->stockCards()
+            ->orderBy('created_at', 'desc');
 
-public function viewStockCard(Request $request, $id) // Tambahkan Request $request
-{
-    $item = Item::findOrFail($id);
+        // Terapkan filter jika ada
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $stockCardsQuery->where(function ($query) use ($search) {
+                $query->where('description', 'like', "%{$search}%")
+                      ->orWhere('vendor', 'like', "%{$search}%");
+            });
+        }
 
-    // Mulai query untuk stock cards
-    $stockCardsQuery = $item->stockCards()
-        ->orderBy('created_at', 'desc');
+        if ($request->filled('note') && $request->note != 'semua') {
+            $stockCardsQuery->where('note', $request->note);
+        }
 
-    // Terapkan filter jika ada
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $stockCardsQuery->where(function ($query) use ($search) {
-            $query->where('description', 'like', "%{$search}%")
-                  ->orWhere('vendor', 'like', "%{$search}%");
-        });
+        if ($request->filled('dari_tanggal') && $request->filled('sampai_tanggal')) {
+            $stockCardsQuery->whereBetween('created_at', [$request->dari_tanggal . ' 00:00:00', $request->sampai_tanggal . ' 23:59:59']);
+        }
+        
+        // Paginate hasil dengan 15 item per halaman
+        $stockCards = $stockCardsQuery->paginate(15)->appends($request->all());
+
+        return inertia('Items/StockCard', [
+            'item' => $item,
+            'stockCards' => $stockCards,
+            'filters' => $request->all(['search', 'note', 'dari_tanggal', 'sampai_tanggal']),
+        ]);
     }
-
-    if ($request->filled('note') && $request->note != 'semua') {
-        $stockCardsQuery->where('note', $request->note);
-    }
-
-    if ($request->filled('dari_tanggal') && $request->filled('sampai_tanggal')) {
-        $stockCardsQuery->whereBetween('created_at', [$request->dari_tanggal . ' 00:00:00', $request->sampai_tanggal . ' 23:59:59']);
-    }
-    
-    // Eksekusi query dan muat hasilnya ke dalam item
-    $item->setRelation('stockCards', $stockCardsQuery->get());
-
-    return inertia('Items/StockCard', [
-        'item' => $item,
-        // Kirim filter yang sedang aktif ke view
-        'filters' => $request->all(['search', 'note', 'dari_tanggal', 'sampai_tanggal']),
-    ]);
-}
 
     public function printPreview()
-{
-    // Method ini hanya menampilkan halaman Vue untuk print.
-    // Datanya sudah dikirim melalui client-side (sessionStorage).
-    return inertia('Items/Print');
-}
+    {
+        return inertia('Items/Print');
+    }
 
-public function destroy($id)
-{
-    $item = item::findOrFail($id);
+    public function destroy($id)
+    {
+        $item = item::findOrFail($id);
 
-    // Hapus semua riwayat stok (data anak) yang terhubung dengan item ini
-    $item->stockCards()->delete();
+        $item->stockCards()->delete();
+        $item->delete();
 
-    // Setelah data anak dihapus, baru hapus data induknya
-    $item->delete();
-
-    return redirect()->route('items.index')->with('success', 'Barang dan semua riwayatnya berhasil dihapus.');
-}
+        return redirect()->route('items.index')->with('success', 'Barang dan semua riwayatnya berhasil dihapus.');
+    }
 }
