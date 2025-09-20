@@ -7,6 +7,7 @@ use App\Http\Controllers\ItemController;
 use Illuminate\Support\Facades\Redirect;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PemasukanController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengeluaranController;
@@ -16,9 +17,8 @@ Route::get('/', function () {
     return Redirect::route('login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', DashboardController::class)
+    ->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
