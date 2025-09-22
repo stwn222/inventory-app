@@ -10,8 +10,10 @@ const showingSidebar = ref(false);
     <div class="flex h-screen bg-gray-100 font-sans">
         <aside class="w-64 flex-shrink-0 bg-blue-800 text-white flex flex-col p-4">
             <div class="flex items-center justify-center mb-10">
-                <Link :href="route('dashboard')" class="flex items-center gap-2">
-                    <ApplicationLogo class="block h-10 w-auto fill-current" />
+                <Link :href="route('dashboard')" class="flex items-center gap-3">
+                    <div class="bg-white p-1 rounded-full shadow">
+                        <ApplicationLogo class="block h-10 w-10 text-blue-800" />
+                    </div>
                     <span class="text-2xl font-bold">BIP</span>
                 </Link>
             </div>
